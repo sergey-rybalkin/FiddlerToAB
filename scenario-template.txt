@@ -1,0 +1,25 @@
+scenario
+{
+  name    = "Fiddler WCAT Script ";
+  warmup      = 30;
+  duration    = 120;
+  cooldown    = 10;
+
+  default
+  {
+    version = HTTP11;
+    setheader
+    {
+      name    = "Connection";
+      value   = "keep-alive";
+    }
+    close = ka;
+  }
+
+  transaction                        
+  {                                  
+    id = "1";     
+    weight = 1;
+    {requests}
+  }
+}

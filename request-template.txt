@@ -1,0 +1,6 @@
+request
+{
+  url     = "{url}";
+  port    = {port};
+  {headers}
+}
