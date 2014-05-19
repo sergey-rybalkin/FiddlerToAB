@@ -18,7 +18,13 @@ namespace FiddlerToWCAT
         public void OnLoad()
         {
             if (!LookupWcat())
+            {
+                MessageBox.Show("WCAT not installed",
+                                "FiddlerToWCAT",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning);
                 return;
+            }
 
             MenuItem menuItem = new MenuItem("Run WCAT Script for selected sessions", OnRunScript);
 
@@ -142,7 +148,7 @@ namespace FiddlerToWCAT
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = Path.Combine(_wcatPath, "wcctl.exe"),
-                Arguments = string.Format("-t {0} -c {1} -s {2} -v {3} -u {4} -w {5} -o {6}",
+                Arguments = string.Format("-t {0} -c {1} -s {2} -v {3} -u {4} -w {5} -o {6} -new_console",
                                           wcatFile,
                                           1,
                                           "localhost",
