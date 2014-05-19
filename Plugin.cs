@@ -65,11 +65,15 @@ namespace FiddlerToWCAT
 
             List<string> requests = new List<string>(selectedSessions.Length);
             string requestTemplate = DataHelper.GetEmbeddedResource(DataHelper.RequestTemplate);
+            int port = 0;
 
             foreach (Session session in selectedSessions)
             {
                 if (session.oRequest.headers.HTTPMethod != "GET")
                     continue;
+
+                if (port == 0)
+                    port = session.port;
 
                 StringBuilder request = new StringBuilder(requestTemplate, 1024);
                 string url = session.PathAndQuery;
@@ -103,7 +107,7 @@ namespace FiddlerToWCAT
             string outputFile = Path.GetTempFileName() + ".wcat.xml";
             File.WriteAllText(scenarioPath, scenario.ToString());
 
-            StartController(scenarioPath, outputFile).WaitForExit(0x7d0);
+            StartController(scenarioPath, outputFile, port).WaitForExit(0x7d0);
             StartClient("localhost").WaitForExit();
 
             if (File.Exists(outputFile))
@@ -143,19 +147,20 @@ namespace FiddlerToWCAT
             return Process.Start(startInfo);
         }
 
-        private Process StartController(string wcatFile, string outputFile)
+        private Process StartController(string wcatFile, string outputFile, int port)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = Path.Combine(_wcatPath, "wcctl.exe"),
-                Arguments = string.Format("-t {0} -c {1} -s {2} -v {3} -u {4} -w {5} -o {6} -new_console",
+                Arguments = string.Format("-t {0} -c {1} -s {2} -v {3} -u {4} -w {5} -o {6} -p {7}",
                                           wcatFile,
                                           1,
                                           "localhost",
                                           "10",
                                           20,
                                           2,
-                                          outputFile),
+                                          outputFile,
+                                          port),
                 UseShellExecute = true,
                 CreateNoWindow = false,
                 ErrorDialog = true
