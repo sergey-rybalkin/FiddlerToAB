@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCompanyAttribute("Sergey Rybalkin")]
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion("0.1.1.0")]
-[assembly: AssemblyFileVersion("0.1.1.0")]
-[assembly: AssemblyInformationalVersion("0.1.1.0")]
+[assembly: AssemblyVersion("0.2.0.0")]
+[assembly: AssemblyFileVersion("0.2.0.0")]
+[assembly: AssemblyInformationalVersion("0.2.0.0")]
 
 [assembly: AssemblyTitle("FiddlerToWCAT")]
 [assembly: AssemblyDescription("Fiddler plugin that generates WCAT scripts from selected sessions.")]

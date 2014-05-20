@@ -1,50 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Windows.Forms;
 using Fiddler;
 
-namespace FiddlerToWCAT
+namespace FiddlerToWcat
 {
     /// <summary>
     /// Plugin entry point.
     /// </summary>
     public class Plugin : IFiddlerExtension
     {
+        private const string WcatDefaultLocation = @"%ProgramFiles(x86)%\wcat";
+
         private string _wcatPath;
 
         public void OnLoad()
         {
             if (!LookupWcat())
             {
-                MessageBox.Show("WCAT not installed",
-                                "FiddlerToWCAT",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Warning);
+                ShowWarning("WCAT cannot be found at " + WcatDefaultLocation);
                 return;
             }
 
             MenuItem menuItem = new MenuItem("Run WCAT Script for selected sessions", OnRunScript);
 
-            FiddlerApplication.UI.mnuSessionContext.GetContextMenu().MenuItems.Add(menuItem);
+            var menu = FiddlerApplication.UI.mnuSessionContext.GetContextMenu();
+            if (null != menu)
+                menu.MenuItems.Add(menuItem);
         }
 
         public void OnBeforeUnload()
         {
         }
 
+        internal static void ShowWarning(string message)
+        {
+            MessageBox.Show(message, "FiddlerToWCAT", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
         private bool LookupWcat()
         {
-            string path = Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\wcat");
-            if (Directory.Exists(path))
-            {
-                _wcatPath = path;
-                return true;
-            }
-
-            path = Environment.ExpandEnvironmentVariables(@"%ProgramFiles%\wcat");
+            string path = Environment.ExpandEnvironmentVariables(WcatDefaultLocation);
             if (Directory.Exists(path))
             {
                 _wcatPath = path;
@@ -59,113 +56,36 @@ namespace FiddlerToWCAT
             Session[] selectedSessions = FiddlerApplication.UI.GetSelectedSessions();
             if (selectedSessions.Length == 0)
             {
-                MessageBox.Show("No sessions selected", "Run WCAT Script");
+                ShowWarning("No sessions selected");
                 return;
             }
 
-            List<string> requests = new List<string>(selectedSessions.Length);
-            string requestTemplate = DataHelper.GetEmbeddedResource(DataHelper.RequestTemplate);
-            int port = 0;
+            string scenarioFile = ExportSessionsAsWcatScript(selectedSessions);
+            string outputFile = scenarioFile + ".xml";
 
-            foreach (Session session in selectedSessions)
-            {
-                if (session.oRequest.headers.HTTPMethod != "GET")
-                    continue;
+            WcatController controller = new WcatController(_wcatPath);
 
-                if (port == 0)
-                    port = session.port;
+            int targetPort = selectedSessions[0].port;
 
-                StringBuilder request = new StringBuilder(requestTemplate, 1024);
-                string url = session.PathAndQuery;
-                request.Replace(@"{url}", url);
-                request.Replace(@"{port}", session.port.ToString());
-
-                HTTPRequestHeaders headers = session.oRequest.headers;
-                StringBuilder headersTemplate = new StringBuilder(1024);
-                for (int i = 0; i < headers.Count(); i++)
-                {
-                    headersTemplate.AppendLine("      setheader");
-                    headersTemplate.AppendLine("      {");
-                    headersTemplate.AppendLine("        name=\"" + headers[i].Name + "\";");
-                    headersTemplate.AppendLine(
-                        "        value=\"" + headers[i].Value.Replace("\"", "\\\"") + "\";");
-                    headersTemplate.AppendLine("      }");
-                }
-
-                request.Replace("{headers}", headersTemplate.ToString());
-                requests.Add(request.ToString());
-            }
-
-            if (requests.Count < 1)
-                return;
-
-            string scenarioTemplate = DataHelper.GetEmbeddedResource(DataHelper.ScenarioTemplate);
-            StringBuilder scenario = new StringBuilder(scenarioTemplate, 1024 * requests.Count);
-            scenario.Replace("{requests}", string.Join(string.Empty, requests));
-
-            string scenarioPath = Path.GetTempFileName() + ".wcat";
-            string outputFile = Path.GetTempFileName() + ".wcat.xml";
-            File.WriteAllText(scenarioPath, scenario.ToString());
-
-            StartController(scenarioPath, outputFile, port).WaitForExit(0x7d0);
-            StartClient("localhost").WaitForExit();
-
-            if (File.Exists(outputFile))
-                ShowResult(outputFile);
+            if (80 == targetPort)
+                controller.RunScenario(scenarioFile, outputFile);
             else
-                MessageBox.Show("WCAT Performance test didn't produce output file");
+                controller.RunScenario(scenarioFile, outputFile, targetPort);
         }
 
-        private Process ShowResult(string filepath)
+        private string ExportSessionsAsWcatScript(Session[] sessions)
         {
-            string path = Path.Combine(Path.GetTempPath(), "report.xsl");
-            if (!File.Exists(path))
-                File.Copy(Path.Combine(_wcatPath, "report.xsl"), path);
+            string tempFile = Path.GetTempFileName();
+            string scenarioFileName = Path.GetFileNameWithoutExtension(tempFile) + ".wcat";
+            string scenarioFilePath = Path.Combine(Path.GetTempPath(), scenarioFileName);
 
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = "iexplore.exe",
-                Arguments = filepath,
-                UseShellExecute = true,
-                CreateNoWindow = false,
-                ErrorDialog = true
-            };
+            Dictionary<string, object> options = new Dictionary<string, object>(1);
+            options["Filename"] = scenarioFilePath;
 
-            return Process.Start(startInfo);
-        }
+            if (!FiddlerApplication.DoExport("WCAT Script", sessions, options, null))
+                return null;
 
-        private Process StartClient(string controller)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = Path.Combine(_wcatPath, "wcclient.exe"),
-                Arguments = controller,
-                UseShellExecute = true,
-                CreateNoWindow = false,
-                ErrorDialog = true
-            };
-            return Process.Start(startInfo);
-        }
-
-        private Process StartController(string wcatFile, string outputFile, int port)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = Path.Combine(_wcatPath, "wcctl.exe"),
-                Arguments = string.Format("-t {0} -c {1} -s {2} -v {3} -u {4} -w {5} -o {6} -p {7}",
-                                          wcatFile,
-                                          1,
-                                          "localhost",
-                                          "10",
-                                          20,
-                                          2,
-                                          outputFile,
-                                          port),
-                UseShellExecute = true,
-                CreateNoWindow = false,
-                ErrorDialog = true
-            };
-            return Process.Start(startInfo);
+            return scenarioFilePath;
         }
     }
 }
