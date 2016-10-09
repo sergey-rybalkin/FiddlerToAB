@@ -57,7 +57,7 @@ namespace FiddlerToWcat
             FileStream batchStream = File.OpenWrite(batchFile);
             using (StreamWriter writer = new StreamWriter(batchStream))
             {
-                writer.WriteLine(@"call ""C:\Program Files\Far\ConEmu\Attach.cmd""");
+                writer.WriteLine(@"call ""C:\Program Files (x86)\Far\ConEmu\Attach.cmd""");
                 writer.Write('"');
                 writer.Write(Path.Combine(_wcatPath, "wcctl.exe"));
                 writer.Write("\" ");

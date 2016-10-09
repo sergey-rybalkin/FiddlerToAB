@@ -11,7 +11,7 @@ namespace FiddlerToWcat
     /// </summary>
     public class Plugin : IFiddlerExtension
     {
-        private const string WcatDefaultLocation = @"%ProgramFiles(x86)%\wcat";
+        private const string WcatDefaultLocation = @"%ProgramFiles%\wcat";
 
         private string _wcatPath;
 
