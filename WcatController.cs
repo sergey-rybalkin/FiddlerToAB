@@ -7,10 +7,6 @@ namespace FiddlerToWcat
     {
         private const int ClientsNumber = 1;
 
-        private const int VirtualClientsNumber = 10;
-
-        private const int DurationSeconds = 20;
-
         private const int WarmupSeconds = 2;
 
         private readonly string _wcatPath;
@@ -24,10 +20,17 @@ namespace FiddlerToWcat
             _wcatPath = wcatPath;
         }
 
-        internal void RunScenario(string scenarioFile, string outputFile, int port = 80)
+        internal void RunScenario(
+            string scenarioFile,
+            string outputFile,
+            string server,
+            int port,
+            int clients,
+            int duration)
         {
             // Prepares batch file that attaches console tab to the ConEmu and runs wcat controller.
-            string batchFile = PrepareControllerBatchFile(scenarioFile, outputFile, port);
+            string batchFile =
+                PrepareControllerBatchFile(scenarioFile, outputFile, server, port, clients, duration);
 
             ProcessStartInfo controllerStartInfo = new ProcessStartInfo
             {
@@ -51,7 +54,13 @@ namespace FiddlerToWcat
             Process.Start(clientStartInfo);
         }
 
-        private string PrepareControllerBatchFile(string scenarioFile, string outputFile, int port = 80)
+        internal string PrepareControllerBatchFile(
+            string scenarioFile,
+            string outputFile,
+            string host,
+            int port,
+            int clients,
+            int duration)
         {
             string batchFile = scenarioFile + ".cmd";
             FileStream batchStream = File.OpenWrite(batchFile);
@@ -65,9 +74,9 @@ namespace FiddlerToWcat
                 string args = string.Format("-t {0} -c {1} -s {2} -v {3} -u {4} -w {5} -p {6} -o {7}",
                                             scenarioFile,
                                             ClientsNumber,
-                                            "localhost",
-                                            VirtualClientsNumber,
-                                            DurationSeconds,
+                                            host,
+                                            clients,
+                                            duration,
                                             WarmupSeconds,
                                             port,
                                             outputFile);

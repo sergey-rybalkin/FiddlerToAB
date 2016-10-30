@@ -36,7 +36,7 @@ namespace FiddlerToWcat
 
         internal static void ShowWarning(string message)
         {
-            MessageBox.Show(message, "FiddlerToWCAT", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FiddlerApplication.AlertUser("FiddlerToWCAT", message);
         }
 
         private bool LookupWcat()
@@ -54,30 +54,50 @@ namespace FiddlerToWcat
         private void OnRunScript(object sender, EventArgs eventArgs)
         {
             Session[] selectedSessions = FiddlerApplication.UI.GetSelectedSessions();
-            if (selectedSessions.Length == 0)
+            if (0 == selectedSessions.Length)
             {
                 ShowWarning("No sessions selected");
                 return;
             }
 
-            string scenarioFile = ExportSessionsAsWcatScript(selectedSessions);
-            string outputFile = scenarioFile + ".xml";
-
-            WcatController controller = new WcatController(_wcatPath);
+            StartDialog dlg = new StartDialog();
+            if (DialogResult.OK != dlg.ShowDialog())
+                return;
 
             int targetPort = selectedSessions[0].port;
+            string targetServer = selectedSessions[0].host;
 
-            if (80 == targetPort)
-                controller.RunScenario(scenarioFile, outputFile);
+            string scenarioFile =
+                ExportSessionsAsWcatScript(selectedSessions, dlg.SelectedPath, targetServer);
+            string outputFile = scenarioFile + ".xml";
+            WcatController controller = new WcatController(_wcatPath);
+
+            if (!dlg.SkipRun)
+            {
+                controller.RunScenario(
+                    scenarioFile,
+                    outputFile,
+                    targetServer,
+                    targetPort,
+                    dlg.Clients,
+                    dlg.DurationSeconds);
+            }
             else
-                controller.RunScenario(scenarioFile, outputFile, targetPort);
+            {
+                controller.PrepareControllerBatchFile(
+                    scenarioFile,
+                    outputFile,
+                    targetServer,
+                    targetPort,
+                    dlg.Clients,
+                    dlg.DurationSeconds);
+            }            
         }
 
-        private string ExportSessionsAsWcatScript(Session[] sessions)
+        private string ExportSessionsAsWcatScript(Session[] sessions, string location, string fileName)
         {
-            string tempFile = Path.GetTempFileName();
-            string scenarioFileName = Path.GetFileNameWithoutExtension(tempFile) + ".wcat";
-            string scenarioFilePath = Path.Combine(Path.GetTempPath(), scenarioFileName);
+            string scenarioFileName = fileName + ".wcat";
+            string scenarioFilePath = Path.Combine(location, scenarioFileName);
 
             Dictionary<string, object> options = new Dictionary<string, object>(1);
             options["Filename"] = scenarioFilePath;
