@@ -1,8 +1,7 @@
-### FiddlerToWCAT
+### FiddlerToAB
 
-Fiddler plugin that exports and runs WCAT scenario files from available sessions.
+Fiddler plugin that provides functionality to export Fiddler sessions to batch files that will run them using Apache Bench tool (ab.exe).
 
 #### Installation
 
-Build solution and copy FiddlerToWCAT.dll file to "%userprofile%\Documents\Fiddler2\Scripts\$(TargetFilename)"
-Requires WCAT tool to be installed
+Build solution and copy FiddlerToAB.dll file to "%AppData%\Local\Programs\Fiddler\ImportExport"

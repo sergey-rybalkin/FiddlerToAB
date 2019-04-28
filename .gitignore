@@ -1,8 +1,8 @@
+*.vs
 *.aps
 *.bak
 *.cache
 *.dbmdl
-*.exe
 *.ilk
 *.lib
 *.lib
@@ -21,17 +21,5 @@
 *.vspscc
 *_i.c
 *_p.c
-[Bb]in
-[Db]ebug
+bin
 obj
-[Rr]elease
-_ReSharper*
-[Tt]est[Rr]esult*
-[Bb]uild[Ll]og.*
-[Pp]ublish.xml
-sql
-"Import Script Logs"
-PrecompiledWeb
-connectionStrings.config
-*.sass-cache
-ipch
